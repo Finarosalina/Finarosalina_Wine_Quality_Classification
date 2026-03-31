@@ -1,112 +1,123 @@
-# Data Science Project Boilerplate
+# 🍷 Wine Quality Classification — KNN Model
 
-This boilerplate is designed to kickstart data science projects by providing a basic setup for database connections, data processing, and machine learning model development. It includes a structured folder organization for your datasets and a set of pre-defined Python packages necessary for most data science tasks.
+**Multiclass classification of red wine quality using K-Nearest Neighbors, with class balancing and hyperparameter optimization.**
 
-## Structure
+---
 
-The project is organized as follows:
+## Overview
 
-- **`src/app.py`** → Main Python script where your project will run.
-- **`src/explore.ipynb`** → Notebook for exploration and testing. Once exploration is complete, migrate the clean code to `app.py`.
-- **`src/utils.py`** → Auxiliary functions, such as database connection.
-- **`requirements.txt`** → List of required Python packages.
-- **`models/`** → Will contain your SQLAlchemy model classes.
-- **`data/`** → Stores datasets at different stages:
-  - **`data/raw/`** → Raw data.
-  - **`data/interim/`** → Temporarily transformed data.
-  - **`data/processed/`** → Data ready for analysis.
+This project builds a machine learning pipeline to classify red wine quality into three categories (low, medium, high) using physicochemical features. The dataset contains 1,599 samples with 11 input features and a quality score from 3 to 8.
 
+The project explores two labeling strategies, compares their performance, and optimizes the final model using GridSearchCV and undersampling techniques to handle class imbalance.
 
-## ⚡ Initial Setup in Codespaces (Recommended)
+---
 
-No manual setup is required, as **Codespaces is automatically configured** with the predefined files created by the academy for you. Just follow these steps:
+## Problem Definition
 
-1. **Wait for the environment to configure automatically**.
-   - All necessary packages and the database will install themselves.
-   - The automatically created `username` and `db_name` are in the **`.env`** file at the root of the project.
-2. **Once Codespaces is ready, you can start working immediately**.
+Wine quality scores (3–8) are mapped to three classes:
 
+| Class | Label | Quality range |
+|---|---|---|
+| 0 | Low quality | ≤ 5 |
+| 1 | Medium quality | 6 |
+| 2 | High quality | ≥ 7 |
 
-## 💻 Local Setup (Only if you can't use Codespaces)
+Two labeling schemes were evaluated before settling on the most balanced approach.
 
-**Prerequisites**
+---
 
-Make sure you have Python 3.11+ installed on your machine. You will also need pip to install the Python packages.
+## Methodology
 
-**Installation**
+**1. Exploratory Data Analysis**
+- Distribution analysis of quality scores
+- Feature statistics and correlation review
+- Identification of class imbalance (class 2 underrepresented)
 
-Clone the project repository to your local machine.
+**2. Labeling strategies**
+- Scheme 1: low (≤4) / medium (5–6) / high (≥7) — heavily imbalanced
+- Scheme 2: low (≤5) / medium (6) / high (≥7) — more balanced, selected as final
 
-Navigate to the project directory and install the required Python packages:
+**3. Preprocessing**
+- StandardScaler normalization
+- Stratified train/test split (70/30)
+
+**4. Model optimization**
+- GridSearchCV over k ∈ [13, 17] with F1-weighted scoring and 5-fold cross-validation
+- Best k found: 14
+- Additional test with distance-weighted KNN + RandomUnderSampler
+
+**5. Evaluation**
+- Accuracy, F1-score (weighted and macro), Balanced Accuracy
+- Confusion matrix visualization
+- Full classification report per class
+
+---
+
+## Results
+
+| Model | Accuracy | F1 Weighted | Balanced Accuracy |
+|---|---|---|---|
+| KNN k=14 (GridSearchCV) | 0.644 | 0.640 | — |
+| KNN k=13 weighted + undersampling | 0.615 | 0.618 | 0.666 |
+| KNN k=1 (baseline scheme 2) | 0.675 | 0.680 | — |
+
+The baseline scheme 2 (k=1) achieved the best global accuracy, while the undersampled model improved recall for the minority class (high quality wines).
+
+---
+
+## Tech Stack
+
+- **Python** — pandas, numpy, scikit-learn, imbalanced-learn
+- **Visualization** — matplotlib, seaborn
+- **Model persistence** — joblib
+- **Environment** — Jupyter Notebook / VS Code
+
+---
+
+## Project Structure
+
+```
+Finarosalina_KNN_BUENO_ML_WINE/
+├── src/
+│   ├── explore.ipynb       # Full analysis and model development
+│   └── app.py              # Exported pipeline script
+├── models/
+│   ├── final_model.pkl     # GridSearchCV optimized model
+│   └── knn_model.pkl       # Distance-weighted undersampled model
+└── README.md
+```
+
+---
+
+## How to Run
 
 ```bash
-pip install -r requirements.txt
+# Clone the repository
+git clone https://github.com/Finarosalina/Finarosalina_KNN_BUENO_ML_WINE.git
+cd Finarosalina_KNN_BUENO_ML_WINE
+
+# Install dependencies
+pip install pandas numpy scikit-learn imbalanced-learn matplotlib seaborn joblib
+
+# Run the notebook
+jupyter notebook src/explore.ipynb
 ```
 
-**Create a database (if necessary)**
+---
 
-Create a new database within the Postgres engine by customizing and executing the following command:
+## Key Learnings
 
-```bash
-$ psql -U postgres -c "DO \$\$ BEGIN 
-    CREATE USER my_user WITH PASSWORD 'my_password'; 
-    CREATE DATABASE my_database OWNER my_user; 
-END \$\$;"
-```
-Connect to the Postgres engine to use your database, manipulate tables, and data:
+- Class imbalance significantly affects KNN performance — undersampling improved recall for minority classes at the cost of overall accuracy
+- The choice of labeling scheme is a domain decision, not just a technical one
+- GridSearchCV with stratified cross-validation is essential for reliable k selection in imbalanced datasets
+- Distance-weighted KNN helps partially compensate for imbalance without data augmentation
 
-```bash
-$ psql -U my_user -d my_database
-```
+---
 
-Once inside PSQL, you can create tables, run queries, insert, update, or delete data, and much more!
+## Dataset
 
-**Environment Variables**
+[Red Wine Quality — UCI / 4Geeks Academy](https://raw.githubusercontent.com/4GeeksAcademy/k-nearest-neighbors-project-tutorial/refs/heads/main/winequality-red.csv)
 
-Create a .env file in the root directory of the project to store your environment variables, such as your database connection string:
+---
 
-```makefile
-DATABASE_URL="postgresql://<USER>:<PASSWORD>@<HOST>:<PORT>/<DB_NAME>"
-
-#example
-DATABASE_URL="postgresql://my_user:my_password@localhost:5432/my_database"
-```
-
-## Running the Application
-
-To run the application, execute the app.py script from the root directory of the project:
-
-```bash
-python src/app.py
-```
-
-## Adding Models
-
-To add SQLAlchemy model classes, create new Python script files within the models/ directory. These classes should be defined according to your database schema.
-
-Example model definition (`models/example_model.py`):
-
-```py
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column
-
-Base = declarative_base()
-
-class ExampleModel(Base):
-    __tablename__ = 'example_table'
-    id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(unique=True)
-```
-
-## Working with Data
-
-You can place your raw datasets in the data/raw directory, intermediate datasets in data/interim, and processed datasets ready for analysis in data/processed.
-
-To process data, you can modify the app.py script to include your data processing steps, using pandas for data manipulation and analysis.
-
-## Contributors
-
-This template was built as part of the [Data Science and Machine Learning Bootcamp](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning) by 4Geeks Academy by [Alejandro Sanchez](https://twitter.com/alesanchezr) and many other contributors. Learn more about [4Geeks Academy BootCamp programs](https://4geeksacademy.com/us/programs) here.
-
-Other templates and resources like this can be found on the school's GitHub page.
+*Part of the 4Geeks Academy Data Science & ML program portfolio.*
